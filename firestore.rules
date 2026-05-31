@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['createdAt', 'updatedAt']) &&
+             data.keys().size() <= 4 &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time &&
+             data.get('email', '') is string &&
+             data.get('budget', 0) is number;
+    }
+    
+    function isValidUserUpdate(data, existingData) {
+      return data.keys().hasAll(['createdAt', 'updatedAt']) &&
+             data.keys().size() <= 4 &&
+             data.createdAt == existingData.createdAt &&
+             data.updatedAt == request.time &&
+             data.get('email', '') is string &&
+             data.get('budget', 0) is number;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUserUpdate(incoming(), existing()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'email', 'budget'])
+      );
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+
+      match /catalog/{itemId} {
+        function isValidCatalog(data) {
+          return data.keys().hasAll(['name', 'category', 'userId', 'createdAt', 'updatedAt']) &&
+                 data.createdAt == request.time &&
+                 data.updatedAt == request.time &&
+                 data.userId == request.auth.uid &&
+                 data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+                 data.category is string && data.category.size() <= 100 &&
+                 data.get('brand', '') is string &&
+                 data.get('type', '') is string &&
+                 data.get('size', '') is string &&
+                 data.get('lastPrice', 0) is number &&
+                 data.get('nutrition', {}) is map;
+        }
+        function isValidCatalogUpdate(data, existingData) {
+           return data.keys().hasAll(['name', 'category', 'userId', 'createdAt', 'updatedAt']) &&
+                 data.createdAt == existingData.createdAt &&
+                 data.updatedAt == request.time &&
+                 data.userId == existingData.userId &&
+                 data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+                 data.category is string && data.category.size() <= 100 &&
+                 data.get('brand', '') is string &&
+                 data.get('type', '') is string &&
+                 data.get('size', '') is string &&
+                 data.get('lastPrice', 0) is number &&
+                 data.get('nutrition', {}) is map;
+        }
+
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(itemId) && isValidCatalog(incoming()) && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidCatalogUpdate(incoming(), existing()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'name', 'brand', 'type', 'size', 'category', 'lastPrice', 'nutrition']);
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+      
+      match /savedLists/{listId} {
+        function isValidSavedList(data) {
+           return data.keys().hasAll(['name', 'userId', 'createdAt', 'updatedAt']) &&
+                  data.createdAt == request.time &&
+                  data.updatedAt == request.time &&
+                  data.userId == request.auth.uid &&
+                  data.name is string && data.name.size() <= 200 &&
+                  data.get('items', []) is list && data.get('items', []).size() <= 500;
+        }
+        function isValidSavedListUpdate(data, existingData) {
+           return data.keys().hasAll(['name', 'userId', 'createdAt', 'updatedAt']) &&
+                  data.createdAt == existingData.createdAt &&
+                  data.updatedAt == request.time &&
+                  data.userId == existingData.userId &&
+                  data.name is string && data.name.size() <= 200 &&
+                  data.get('items', []) is list && data.get('items', []).size() <= 500;
+        }
+        
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(listId) && isValidSavedList(incoming()) && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidSavedListUpdate(incoming(), existing()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'name', 'items']);
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /history/{historyId} {
+        function isValidHistory(data) {
+           return data.keys().hasAll(['date', 'total', 'userId', 'createdAt', 'updatedAt']) &&
+                  data.createdAt == request.time &&
+                  data.updatedAt == request.time &&
+                  data.userId == request.auth.uid &&
+                  data.date is string && data.date.size() <= 100 &&
+                  data.total is number &&
+                  data.get('items', []) is list && data.get('items', []).size() <= 500;
+        }
+        function isValidHistoryUpdate(data, existingData) {
+           return data.keys().hasAll(['date', 'total', 'userId', 'createdAt', 'updatedAt']) &&
+                  data.createdAt == existingData.createdAt &&
+                  data.updatedAt == request.time &&
+                  data.userId == existingData.userId &&
+                  data.date is string && data.date.size() <= 100 &&
+                  data.total is number &&
+                  data.get('items', []) is list && data.get('items', []).size() <= 500;
+        }
+
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(historyId) && isValidHistory(incoming()) && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidHistoryUpdate(incoming(), existing()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'date', 'total', 'items']);
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /activeList/{listId} {
+        function isValidActiveList(data) {
+           return data.keys().hasAll(['userId', 'createdAt', 'updatedAt']) &&
+                  data.createdAt == request.time &&
+                  data.updatedAt == request.time &&
+                  data.userId == request.auth.uid &&
+                  data.get('items', []) is list && data.get('items', []).size() <= 500;
+        }
+        function isValidActiveListUpdate(data, existingData) {
+           return data.keys().hasAll(['userId', 'createdAt', 'updatedAt']) &&
+                  data.createdAt == existingData.createdAt &&
+                  data.updatedAt == request.time &&
+                  data.userId == existingData.userId &&
+                  data.get('items', []) is list && data.get('items', []).size() <= 500;
+        }
+
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(listId) && isValidActiveList(incoming()) && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidActiveListUpdate(incoming(), existing()) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'items']);
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}

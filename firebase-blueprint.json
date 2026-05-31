@@ -1,0 +1,163 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "budget": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["createdAt", "updatedAt"]
+    },
+    "CatalogItem": {
+      "title": "Catalog Item",
+      "description": "Item in the user's catalog with price history",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "lastPrice": {
+          "type": "number"
+        },
+        "nutrition": {
+          "type": "object"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["name", "category", "userId", "createdAt", "updatedAt"]
+    },
+    "SavedList": {
+      "title": "Saved List Template",
+      "description": "A saved list template",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["name", "userId", "createdAt", "updatedAt"]
+    },
+    "History": {
+      "title": "History",
+      "description": "Purchase history",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array"
+        },
+        "total": {
+          "type": "number"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["date", "total", "userId", "createdAt", "updatedAt"]
+    },
+    "ActiveList": {
+      "title": "Active List",
+      "description": "The user's current shopping list",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["userId", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "User profile"
+    },
+    "/users/{userId}/catalog/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/CatalogItem"
+      },
+      "description": "User's catalog items"
+    },
+    "/users/{userId}/savedLists/{listId}": {
+      "schema": {
+        "$ref": "#/entities/SavedList"
+      },
+      "description": "User's saved list templates"
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": {
+        "$ref": "#/entities/History"
+      },
+      "description": "User's purchase history"
+    },
+    "/users/{userId}/activeList/{listId}": {
+      "schema": {
+        "$ref": "#/entities/ActiveList"
+      },
+      "description": "User's active shopping list"
+    }
+  }
+}
