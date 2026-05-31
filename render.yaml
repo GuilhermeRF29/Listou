@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: listou-api
+    env: node
+    region: ohio
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        value: https://listou.vercel.app
+      - key: GEMINI_API_KEY
+        sync: false
