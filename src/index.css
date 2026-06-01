@@ -1,1 +1,20 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg-page: #F8FAFC;
+  --bg-card: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+}
+
+.dark {
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+}
+
+.bg-page { background-color: var(--bg-page); }
