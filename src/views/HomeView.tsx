@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { LogIn, LogOut, Plus, Package, List, BarChart3, Moon, Sun, Download } from 'lucide-react'
+import { LogIn, LogOut, Plus, Package, List, BarChart3, Moon, Sun, Download, FileSpreadsheet } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
 import { cn } from '../lib/cn'
 import type { View, Item, CatalogItem, SavedList, HistoryEntry } from '../types'
@@ -30,6 +30,12 @@ export function HomeView({ user, activeCount, catalogCount, savedListsCount, tot
     a.download = `listou_${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleExportExcel = async () => {
+    if (!exportData) return
+    const { exportExcel } = await import('../lib/exportExcel')
+    exportExcel({ activeItems: exportData.activeItems, catalog: exportData.catalog, history: exportData.history })
   }
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col pt-12 px-6 pb-24 overflow-y-auto space-y-6 dark:[--bg-page:#0f172a]">
@@ -94,9 +100,14 @@ export function HomeView({ user, activeCount, catalogCount, savedListsCount, tot
           <div><span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Total Acumulado</span><span className="block text-3xl font-black text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{formatCurrency(totalSpent)}</span></div>
         </GlassCard>
         {exportData && (
-          <button onClick={handleExport} className="col-span-2 flex items-center justify-center gap-2 py-4 text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer">
-            <Download size={16} /> Exportar Dados (JSON)
-          </button>
+          <>
+            <button onClick={handleExport} className="col-span-1 flex items-center justify-center gap-2 py-4 text-sm font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <Download size={16} /> JSON
+            </button>
+            <button onClick={handleExportExcel} className="col-span-1 flex items-center justify-center gap-2 py-4 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-50/50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800 cursor-pointer">
+              <FileSpreadsheet size={16} /> Excel
+            </button>
+          </>
         )}
       </div>
     </motion.div>

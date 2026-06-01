@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import type { ChangeEvent } from 'react'
+import type { User } from 'firebase/auth'
 import { doc, setDoc, onSnapshot, collection, query, deleteDoc } from 'firebase/firestore'
 import { db, handleFirestoreError, OperationType } from '../firebase'
 import type { Item, CatalogItem, HistoryEntry, SavedList, Nutrition, View, SortBy, AnalyticsType } from '../types'
+import { SIZE_PATTERN, COMMON_BRANDS, CATEGORY_PATTERNS } from '../lib/constants'
 
-export function useShoppingList(user: any) {
+export function useShoppingList(user: User | null) {
   const [view, setView] = useState<View>('home')
   const [activeItems, setActiveItems] = useState<Item[]>([])
   const [savedLists, setSavedLists] = useState<SavedList[]>([])
@@ -21,12 +23,10 @@ export function useShoppingList(user: any) {
   const [inputStore, setInputStore] = useState('')
   const [budget, setBudget] = useState(0)
   const [listName, setListName] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
 
   const [showNutrition, setShowNutrition] = useState(false)
   const [nutrition, setNutrition] = useState<Nutrition>({ p100: {}, portion: {}, vd: {} })
   const [sortBy, setSortBy] = useState<SortBy>('alpha')
-  const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showInputModal, setShowInputModal] = useState(false)
   const [showKeypad, setShowKeypad] = useState(false)
   const [showBudgetModal, setShowBudgetModal] = useState(false)
@@ -151,7 +151,7 @@ export function useShoppingList(user: any) {
 
   const calcTotal = (list: Item[]) => list.reduce((acc, i) => acc + (i.price * i.quantity), 0)
   const calcChecked = (list: Item[]) => list.filter(i => i.checked).reduce((acc, i) => acc + (i.price * i.quantity), 0)
-  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+  const formatCurrency = useCallback((val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val), [])
 
   const updateActiveItems = useCallback((newOrFn: any) => {
     setActiveItems(prev => {
@@ -188,43 +188,26 @@ export function useShoppingList(user: any) {
     } catch (e) { handleFirestoreError(e, OperationType.DELETE, 'users/catalog') }
   }
 
-  const detectCategory = (name: string) => {
+  const detectCategory = useCallback((name: string) => {
     const n = name.toLowerCase()
-    if (n.match(/arroz|feijão|macarrão|óleo|açúcar|farinha|café/)) return 'Mercearia'
-    if (n.match(/leite|queijo|iogurte|manteiga|requeijão/)) return 'Laticínios'
-    if (n.match(/carne|frango|bife|peixe|linguiça/)) return 'Açougue'
-    if (n.match(/shampoo|sabonete|papel|creme|pasta|desodorante/)) return 'Higiene'
-    if (n.match(/detergente|sabão|água sanitária|limpador|bucha/)) return 'Limpeza'
-    if (n.match(/banana|maçã|tomate|cebola|batata|cenoura|alface/)) return 'Hortifruti'
-    if (n.match(/pão|bolo|biscoito|bolacha/)) return 'Padaria'
-    if (n.match(/cerveja|refrigerante|suco|água/)) return 'Bebidas'
+    for (const [pattern, category] of CATEGORY_PATTERNS) {
+      if (n.match(pattern)) return category
+    }
     return 'Geral'
-  }
+  }, [])
 
-  const getLastPrice = (name: string) => catalog.find(c => c.name.toLowerCase() === name.toLowerCase())?.lastPrice
-
-  const sortItems = (items: any[]) => {
-    let sorted = [...items]
-    if (sortBy === 'alpha') sorted.sort((a, b) => a.name.localeCompare(b.name))
-    if (sortBy === 'brand') sorted.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''))
-    if (sortBy === 'category') sorted.sort((a, b) => (a.category || 'Geral').localeCompare(b.category || 'Geral'))
-    if (sortBy === 'price') sorted.sort((a, b) => (b.price * b.quantity) - (a.price * a.quantity))
-    if (sortBy === 'store') sorted.sort((a, b) => (a.store || '').localeCompare(b.store || ''))
-    return sorted
-  }
+  const getLastPrice = useCallback((name: string) => catalog.find(c => c.name.toLowerCase() === name.toLowerCase())?.lastPrice, [catalog])
 
   const parseInput = (text: string) => {
     let parsed = { name: text, brand: '', type: '', size: '' }
-    const sizePattern = /\b(?:de\s+|com\s+)?(\d+[\.,]?\d*\s*(?:kg|g|mg|l|ml|un|pcts?|cxs?|caixas?|pacotes?|rolo|rolos|unidade|unidades|folhas?|m|cm|mm))\b/ig
-    const sizeMatches = Array.from(text.matchAll(sizePattern))
+    const sizeMatches = Array.from(text.matchAll(SIZE_PATTERN))
     if (sizeMatches.length > 0) {
       parsed.size = sizeMatches.map(m => m[1]).join(', ').toUpperCase()
       sizeMatches.forEach(m => { parsed.name = parsed.name.replace(m[0], ' ') })
     }
 
-    const commonBrands = ['camil', 'neve', 'ypê', 'ype', 'omo', 'nestlé', 'nestle', 'garoto', 'lacta', 'bauducco', 'sazon', 'maggi', 'sadia', 'perdigão', 'perdigao', 'seara', 'friboi', 'aurora', 'elegê', 'elege', 'parmalat', 'itambé', 'itambe', 'vigor', 'danone', 'batavo', 'piracanjuba', 'coca-cola', 'coca', 'pepsi', 'guaraná', 'guarana', 'fanta', 'sprite', 'sukita', 'schin', 'brahma', 'skol', 'antarctica', 'heineken', 'amstel', 'itaipava', 'qualitá', 'qualita', 'carrefour', 'extra', 'tixan', 'brilhante', 'ariel', 'downy', 'comfort', 'fofo', 'limpol', 'minuano', 'bombril', 'assolan', 'veja', 'cif', 'ajax', 'lysol', 'pinho sol', 'raid', 'sbp', 'baygon', 'pampers', 'huggies', 'cremer', 'personal', 'chamex', 'bic', 'colgate', 'sorriso', 'close up', 'oral-b', 'sensodyne', 'listerine', 'rexona', 'dove', 'nivea', 'suave', 'seda', 'pantene', 'gillette', 'palmolive', 'lux', 'francis', 'phebo', 'granado', 'hellmanns', 'heinz', 'quero', 'cepêra', 'fugini', 'cica', 'elefante', 'gallo', 'andorinha', 'soya', 'liza', 'primor', 'delícia', 'qualy', 'claybom', 'doriana', 'zero cal', 'linea', 'adria', 'piraquê', 'elma chips', 'ruffles', 'doritos', 'kelloggs', 'sucrilhos', 'nescau', 'toddy', 'pilão', 'melitta', 'três corações', 'suvinil', 'coral']
-    const currentBrands = catalog.map(c => c.brand).filter(Boolean).map(b => b?.toLowerCase())
-    const knownBrands = new Set([...commonBrands, ...currentBrands])
+    const currentBrands = catalog.map(c => c.brand).filter(Boolean).map(b => b!.toLowerCase())
+    const knownBrands = new Set([...COMMON_BRANDS, ...currentBrands])
     const parts = parsed.name.split(/[-,\. ]+/).map(s => s.trim()).filter(Boolean)
     let nameParts: string[] = []
     let foundBrand = ''
@@ -240,12 +223,12 @@ export function useShoppingList(user: any) {
     return parsed
   }
 
-  const resetInputs = () => {
+  const resetInputs = useCallback(() => {
     setInputName(''); setInputBrand(''); setInputType(''); setInputSize('')
     setInputQty(1); setInputPrice(''); setNutrition({ p100: {}, portion: {}, vd: {} }); setInputEmoji(''); setInputStore('')
     setShowNutrition(false); setIsManualMode(false); setShowKeypad(false); setShowInputModal(false)
     setEditingItemId(null); setShowScanner(false)
-  }
+  }, [])
 
   const confirmItem = () => {
     const finalPrice = parseFloat(inputPrice) || 0
@@ -301,19 +284,19 @@ export function useShoppingList(user: any) {
     resetInputs()
   }
 
-  const closeInputModal = () => {
+  const closeInputModal = useCallback(() => {
     setShowInputModal(false)
-    resetInputs()
-    if (window.history.state?.modal) window.history.back()
-  }
+    setEditingItemId(null)
+    setShowScanner(false)
+  }, [])
 
-  const openInputModal = () => {
+  const openInputModal = useCallback(() => {
     window.history.pushState({ modal: true }, '')
     resetInputs()
     setShowInputModal(true)
-  }
+  }, [])
 
-  const openForEdit = (item: any, isCatalogMode = false) => {
+  const openForEdit = useCallback((item: any, isCatalogMode = false) => {
     window.history.pushState({ modal: true }, '')
     resetInputs()
     setTimeout(() => {
@@ -337,15 +320,30 @@ export function useShoppingList(user: any) {
       }
       setShowInputModal(true)
     }, 50)
-  }
+  }, [])
 
-  const finishShopping = () => {
+  const finishShopping = useCallback(() => {
     if (activeItems.filter(i => i.checked).length === 0 && activeItems.length > 0) {
       alert("Marque itens no carrinho primeiro.")
       return
     }
     setView('finish-save')
-  }
+  }, [activeItems])
+
+  const selectSuggestion = useCallback((sug: CatalogItem) => {
+    setInputName(sug.name)
+    if (sug.brand) setInputBrand(sug.brand)
+    if (sug.size) setInputSize(sug.size)
+    if (sug.category) setInputType(sug.category)
+    if (sug.emoji) setInputEmoji(sug.emoji)
+    if (sug.lastPrice) setInputPrice(sug.lastPrice.toString())
+    if (sug.store) setInputStore(sug.store)
+    if (sug.nutrition) {
+      setNutrition(sug.nutrition)
+      setShowNutrition(true)
+    }
+    setIsManualMode(true)
+  }, [])
 
   const saveAndClose = (shouldSaveList: boolean) => {
     const cartItems = activeItems.filter(i => i.checked)
@@ -402,28 +400,12 @@ export function useShoppingList(user: any) {
     }
   }
 
-  const selectSuggestion = (sug: CatalogItem) => {
-    setInputName(sug.name)
-    setInputBrand(sug.brand || '')
-    setInputSize(sug.size || '')
-    if (sug.lastPrice) setInputPrice(sug.lastPrice.toString())
-    setSuggestions([])
-  }
-
-  const deleteFromCatalog = (id: number) => {
+  const deleteFromCatalog = useCallback((id: number) => {
     if (window.confirm('Excluir do catálogo?')) {
       setCatalog(catalog.filter(c => c.id !== id))
       deleteFromCatalogFirebase(id)
     }
-  }
-
-  const handleShareList = () => {
-    const text = activeItems.map(i => `${i.checked ? '✅' : '⬜'} ${i.quantity}x ${i.name} ${i.brand ? '- ' + i.brand : ''}`).join('\n')
-    const header = `🛒 Minha Lista de Compras - Listou\nTotal Estimado: ${formatCurrency(calcTotal(activeItems))}\n\n`
-    navigator.clipboard.writeText(header + text).then(() => {
-      alert("Lista copiada para a área de transferência!")
-    }).catch(() => alert("Erro ao copiar."))
-  }
+  }, [catalog])
 
   const onPhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -563,40 +545,36 @@ export function useShoppingList(user: any) {
     }
   }
 
+  const total = useMemo(() => calcTotal(activeItems), [activeItems])
+  const checkedTotal = useMemo(() => calcChecked(activeItems), [activeItems])
+  const uniqueStores = useMemo(
+    () => [...new Set([...catalog.map(c => c.store), ...activeItems.map(i => i.store)].filter(Boolean))],
+    [catalog, activeItems]
+  )
+
   return {
-    // State
     view, activeItems, savedLists, history, catalog,
     inputName, inputBrand, inputType, inputSize, inputPrice, inputQty, inputEmoji, inputStore,
-    budget, listName, searchTerm,
-    showNutrition, nutrition, sortBy, showFilterMenu,
-    showInputModal, showKeypad, showBudgetModal,
+    budget, listName,
+    showNutrition, nutrition, sortBy,
+    showInputModal, showKeypad,
     isManualMode, editingItemId, suggestions,
     viewingItemDetails, showScanner,
     analyticsType, analyticsSelection,
     analyzing, analyzeError,
 
-    // Derived
-    total: calcTotal(activeItems),
-    checkedTotal: calcChecked(activeItems),
-    formatCurrency,
-    getLastPrice,
-    uniqueStores: [...new Set([...catalog.map(c => c.store), ...activeItems.map(i => i.store)].filter(Boolean))],
+    total, checkedTotal, formatCurrency, getLastPrice, uniqueStores,
 
-    // Setters
-    setView, setBudget, setListName, setSearchTerm,
+    setView, setBudget, setListName,
     setInputName, setInputBrand, setInputType, setInputSize,
     setInputPrice, setInputQty, setInputEmoji, setInputStore,
-    setSortBy, setShowFilterMenu, setShowNutrition,
-    setNutrition, setIsManualMode, setShowKeypad,
-    setShowBudgetModal, setShowScanner,
-    setViewingItemDetails,
+    setSortBy, setShowNutrition, setNutrition, setIsManualMode, setShowKeypad,
+    setShowScanner, setViewingItemDetails,
     setAnalyticsType, setAnalyticsSelection,
 
-    // Actions
     updateActiveItems, confirmItem, closeInputModal,
     openInputModal, openForEdit, finishShopping, saveAndClose,
     handleKeypadPress, selectSuggestion, deleteFromCatalog,
-    handleShareList, onPhotoUpload, onBarcodeScan, onContinuousBarcodeScan,
-    sortItems, resetInputs, detectCategory,
+    onPhotoUpload, onBarcodeScan, onContinuousBarcodeScan,
   }
 }

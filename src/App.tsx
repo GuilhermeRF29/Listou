@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from './hooks/useAuth'
 import { useShoppingList } from './hooks/useShoppingList'
@@ -44,6 +44,21 @@ export default function App() {
     }
   }, [user])
 
+  const handleToggleDark = useCallback(() => setDark(d => !d), [])
+  const handleOpenEdit = useCallback((item: any) => s.openForEdit(item, false), [s.openForEdit])
+  const handleCatalogEdit = useCallback((item: any, isCatalog: boolean) => s.openForEdit(item, isCatalog), [s.openForEdit])
+  const handleLoadList = useCallback((items: any[]) => s.updateActiveItems(items), [s.updateActiveItems])
+  const handleToggleNutrition = useCallback(() => s.setShowNutrition(!s.showNutrition), [s.showNutrition, s.setShowNutrition])
+  const handleToggleManual = useCallback(() => s.setIsManualMode(!s.isManualMode), [s.isManualMode, s.setIsManualMode])
+  const handleToggleKeypad = useCallback(() => s.setShowKeypad(!s.showKeypad), [s.showKeypad, s.setShowKeypad])
+  const handleScannerOpen = useCallback(() => s.setShowScanner(true), [s.setShowScanner])
+  const handleCloseDetails = useCallback(() => s.setViewingItemDetails(null), [s.setViewingItemDetails])
+  const handleCloseScanner = useCallback(() => s.setShowScanner(false), [s.setShowScanner])
+  const exportData = useMemo(() => ({
+    activeItems: s.activeItems, catalog: s.catalog,
+    savedLists: s.savedLists, history: s.history, budget: s.budget
+  }), [s.activeItems, s.catalog, s.savedLists, s.history, s.budget])
+
   return (
     <>
       <AnimatePresence>
@@ -88,8 +103,8 @@ export default function App() {
             onSignOut={signOut}
             onNavigate={s.setView}
             dark={dark}
-            onToggleDark={() => setDark(!dark)}
-            exportData={{ activeItems: s.activeItems, catalog: s.catalog, savedLists: s.savedLists, history: s.history, budget: s.budget }}
+            onToggleDark={handleToggleDark}
+            exportData={exportData}
           />
         )}
         {s.view === 'shopping' && (
@@ -106,7 +121,7 @@ export default function App() {
             onUpdateItems={s.updateActiveItems}
             onSetBudget={s.setBudget}
             onSetSortBy={s.setSortBy}
-            onOpenEdit={(item) => s.openForEdit(item, false)}
+            onOpenEdit={handleOpenEdit}
             onViewDetails={s.setViewingItemDetails}
             onFinishShopping={s.finishShopping}
             onOpenInputModal={s.openInputModal}
@@ -120,7 +135,7 @@ export default function App() {
             onSetSortBy={s.setSortBy}
             onNavigate={s.setView}
             formatCurrency={s.formatCurrency}
-            onEdit={(item, isCatalog) => s.openForEdit(item, isCatalog)}
+            onEdit={handleCatalogEdit}
             onDelete={s.deleteFromCatalog}
             onAddNew={s.openInputModal}
           />
@@ -128,7 +143,7 @@ export default function App() {
         {s.view === 'saved-lists' && (
           <SavedListsView
             savedLists={s.savedLists}
-            onLoadList={(items) => s.updateActiveItems(items)}
+            onLoadList={handleLoadList}
             onNavigate={s.setView}
           />
         )}
@@ -185,22 +200,22 @@ export default function App() {
           onEmojiChange={s.setInputEmoji}
           onStoreChange={s.setInputStore}
           onNutritionChange={s.setNutrition}
-          onToggleNutrition={() => s.setShowNutrition(!s.showNutrition)}
-          onToggleManual={() => s.setIsManualMode(!s.isManualMode)}
-          onToggleKeypad={() => s.setShowKeypad(!s.showKeypad)}
+            onToggleNutrition={handleToggleNutrition}
+            onToggleManual={handleToggleManual}
+            onToggleKeypad={handleToggleKeypad}
           onKeypadPress={s.handleKeypadPress}
           onSelectSuggestion={s.selectSuggestion}
           onPhotoUpload={s.onPhotoUpload}
-          onScannerOpen={() => s.setShowScanner(true)}
+            onScannerOpen={handleScannerOpen}
           onConfirm={s.confirmItem}
           onClose={s.closeInputModal}
         />
         </Suspense>
 
-        <NutritionDetails item={s.viewingItemDetails} onClose={() => s.setViewingItemDetails(null)} />
+        <NutritionDetails item={s.viewingItemDetails} onClose={handleCloseDetails} />
 
         {s.showScanner && (
-          <BarcodeScanner onScan={s.onBarcodeScan} onContinuousAdd={s.onContinuousBarcodeScan} onClose={() => s.setShowScanner(false)} />
+          <BarcodeScanner onScan={s.onBarcodeScan} onContinuousAdd={s.onContinuousBarcodeScan} onClose={handleCloseScanner} />
         )}
       </div>
     </div>

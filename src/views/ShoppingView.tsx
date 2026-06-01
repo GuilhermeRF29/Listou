@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Home, Plus, Wallet, Trash2, ShoppingBag, ArrowRight, Check, ChevronDown, SortAsc, Tag, List, TrendingDown, Filter, X, ArrowDown, Store } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
@@ -42,7 +42,7 @@ export function ShoppingView({
 
   const filteredItems = storeFilter ? activeItems.filter(i => i.store === storeFilter) : activeItems
 
-  const sortItems = (items: Item[]) => {
+  const sortItems = useCallback((items: Item[]) => {
     let sorted = [...items]
     if (sortBy === 'alpha') sorted.sort((a, b) => a.name.localeCompare(b.name))
     if (sortBy === 'brand') sorted.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''))
@@ -50,7 +50,23 @@ export function ShoppingView({
     if (sortBy === 'price') sorted.sort((a, b) => (b.price * b.quantity) - (a.price * a.quantity))
     if (sortBy === 'store') sorted.sort((a, b) => (a.store || '').localeCompare(b.store || ''))
     return sorted
-  }
+  }, [sortBy])
+
+  const handleToggle = useCallback((id: number) => {
+    onUpdateItems((items: Item[]) => items.map(i => i.id === id ? { ...i, checked: !i.checked } : i))
+  }, [onUpdateItems])
+
+  const handleEdit = useCallback((item: Item) => {
+    onOpenEdit(item)
+  }, [onOpenEdit])
+
+  const handleDelete = useCallback((id: number) => {
+    onUpdateItems((items: Item[]) => items.filter(i => i.id !== id))
+  }, [onUpdateItems])
+
+  const handleViewDetails = useCallback((item: Item) => {
+    onViewDetails(item)
+  }, [onViewDetails])
 
   const sortedItems = sortItems(filteredItems)
   const cartItems = sortedItems.filter(i => i.checked)
@@ -137,7 +153,7 @@ export function ShoppingView({
                   <div key={cat} className="space-y-2">
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">{cat} ({(items as any[]).length})</h3>
                     <AnimatePresence>{(items as any[]).map((item: any) => (
-                      <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={(id: number) => onUpdateItems((items: any[]) => items.map((i: any) => i.id === id ? { ...i, checked: !i.checked } : i))} onPriceClick={(i: any) => onOpenEdit(i)} onEdit={(i: any) => onOpenEdit(i)} onDelete={(id: number) => onUpdateItems((items: any[]) => items.filter((i: any) => i.id !== id))} onViewDetails={(i: any) => onViewDetails(i)} />
+                      <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
                     ))}</AnimatePresence>
                   </div>
                 ))
@@ -151,7 +167,7 @@ export function ShoppingView({
                   <div key={storeName} className="space-y-2">
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2"><Store size={12} className="inline mr-1" />{storeName} ({(items as any[]).length})</h3>
                     <AnimatePresence>{(items as any[]).map((item: any) => (
-                      <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={(id: number) => onUpdateItems((items: any[]) => items.map((i: any) => i.id === id ? { ...i, checked: !i.checked } : i))} onPriceClick={(i: any) => onOpenEdit(i)} onEdit={(i: any) => onOpenEdit(i)} onDelete={(id: number) => onUpdateItems((items: any[]) => items.filter((i: any) => i.id !== id))} onViewDetails={(i: any) => onViewDetails(i)} />
+                      <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
                     ))}</AnimatePresence>
                   </div>
                 ))
@@ -159,7 +175,7 @@ export function ShoppingView({
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">Pendente ({pendingItems.length})</h3>
                   <AnimatePresence>{pendingItems.map((item) => (
-                    <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={(id) => onUpdateItems((items: any[]) => items.map((i: any) => i.id === id ? { ...i, checked: !i.checked } : i))} onPriceClick={(i) => onOpenEdit(i)} onEdit={(i) => onOpenEdit(i)} onDelete={(id) => onUpdateItems((items: any[]) => items.filter((i: any) => i.id !== id))} onViewDetails={(i) => onViewDetails(i)} />
+                    <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
                   ))}</AnimatePresence>
                 </div>
               )}
@@ -172,7 +188,7 @@ export function ShoppingView({
             <motion.div layout className="space-y-2 pt-4">
               <div className="flex items-center gap-2 mb-3 ml-1 opacity-80"><div className="h-[1px] flex-1 bg-emerald-200/50"></div><span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-1"><Check size={10} /> Concluídos ({cartItems.length})</span><div className="h-[1px] flex-1 bg-emerald-200/50"></div></div>
               <AnimatePresence>{cartItems.map((item) => (
-                <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={(id) => onUpdateItems((items: any[]) => items.map((i: any) => i.id === id ? { ...i, checked: !i.checked } : i))} onPriceClick={(i) => onOpenEdit(i)} onEdit={(i) => onOpenEdit(i)} onDelete={(id) => onUpdateItems((items: any[]) => items.filter((i: any) => i.id !== id))} onViewDetails={(i) => onViewDetails(i)} />
+                <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
               ))}</AnimatePresence>
             </motion.div>
           )}

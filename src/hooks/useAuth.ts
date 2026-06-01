@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth'
+import { User, onAuthStateChanged, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from 'firebase/auth'
 import { auth, db } from '../firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 
@@ -30,15 +30,18 @@ export function useAuth() {
         }
       }
     })
+
+    getRedirectResult(auth).catch((e) => {
+      if (e.code === 'auth/unauthorized-domain') {
+        console.warn('Domínio não autorizado no Firebase Console.')
+      }
+    })
+
     return () => unsubscribe()
   }, [])
 
   const signIn = async () => {
-    try {
-      await signInWithPopup(auth, new GoogleAuthProvider())
-    } catch (e) {
-      console.error(e)
-    }
+    await signInWithRedirect(auth, new GoogleAuthProvider())
   }
 
   const signOutUser = async () => {
