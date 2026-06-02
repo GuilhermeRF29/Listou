@@ -83,34 +83,34 @@ export function ShoppingView({
             {budget > 0 && <div className="flex items-center gap-1 mt-1 text-xs font-medium text-slate-400 dark:text-slate-500"><Wallet size={10} /> Meta: {formatCurrency(budget)}</div>}
           </div>
         </div>
-        {budget > 0 && <div className="w-full h-1.5 bg-slate-100 rounded-full mb-4 overflow-hidden"><div className={cn("h-full transition-all duration-500", isOverBudget ? "bg-red-500" : "bg-emerald-500")} style={{ width: `${progress}%` }} /></div>}
+        {budget > 0 && <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden"><div className={cn("h-full transition-all duration-500", isOverBudget ? "bg-red-500" : "bg-emerald-500")} style={{ width: `${progress}%` }} /></div>}
         <div className="flex justify-between items-center relative">
           <div className="flex gap-2 relative">
-            <button onClick={() => setShowFilterMenu(!showFilterMenu)} className={cn("text-xs font-bold px-4 py-2 rounded-xl border flex items-center gap-2 transition-all", showFilterMenu ? "bg-slate-800 text-white" : "bg-white/60 text-slate-600 hover:bg-white")}>
+            <button onClick={() => setShowFilterMenu(!showFilterMenu)} className={cn("text-xs font-bold px-4 py-2 rounded-xl border flex items-center gap-2 transition-all", showFilterMenu ? "bg-slate-800 text-white" : "bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700")}>
               <Filter size={14} /> {sortBy === 'alpha' ? 'A-Z' : sortBy === 'brand' ? 'Marca' : sortBy === 'category' ? 'Categ' : sortBy === 'store' ? 'Mercado' : 'Preço'} <ChevronDown size={12} />
             </button>
-            <button onClick={() => setShowBudgetModal(true)} className="p-2 bg-white/60 rounded-xl border border-slate-200/50 text-slate-600 hover:bg-white"><Wallet size={18} /></button>
+            <button onClick={() => setShowBudgetModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-slate-200/50 dark:border-slate-600/50 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold"><Wallet size={18} />{budget > 0 ? `Meta: ${formatCurrency(budget)}` : 'Meta'}</button>
               {showFilterMenu && (
-                <div className="absolute top-12 left-0 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-2 w-56 z-50">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1">Ordenar por</p>
+                <div className="absolute top-12 left-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 p-2 w-56 z-50">
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase px-2 py-1">Ordenar por</p>
                   {(['alpha', 'brand', 'category', 'store', 'price'] as SortBy[]).map(key => (
                     <button key={key} onClick={() => { onSetSortBy(key); setShowFilterMenu(false) }}
-                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50/50 rounded-xl flex gap-2">
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 rounded-xl flex gap-2">
                       {key === 'alpha' && <SortAsc size={14} />}{key === 'brand' && <Tag size={14} />}{key === 'category' && <List size={14} />}{key === 'store' && <Store size={14} />}{key === 'price' && <TrendingDown size={14} />}
                       {key === 'alpha' ? 'A-Z' : key === 'brand' ? 'Marca' : key === 'category' ? 'Categoria' : key === 'store' ? 'Mercado' : 'Preço'}
                     </button>
                   ))}
                   {uniqueStores.length > 0 && (
                     <>
-                      <div className="h-px bg-slate-100 my-1" />
-                      <p className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1">Filtrar por mercado</p>
+                      <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase px-2 py-1">Filtrar por mercado</p>
                       <button onClick={() => { setStoreFilter(''); setShowFilterMenu(false) }}
-                        className={cn("w-full text-left px-3 py-2 text-sm font-medium rounded-xl flex gap-2", !storeFilter ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-50/50")}>
+                        className={cn("w-full text-left px-3 py-2 text-sm font-medium rounded-xl flex gap-2", !storeFilter ? "bg-emerald-50 text-emerald-700" : "text-slate-700 dark:text-slate-200 hover:bg-slate-50/50 dark:hover:bg-slate-700/50")}>
                         <Store size={14} /> Todos
                       </button>
                       {uniqueStores.map(s => (
                         <button key={s} onClick={() => { setStoreFilter(s); setShowFilterMenu(false) }}
-                          className={cn("w-full text-left px-3 py-2 text-sm font-medium rounded-xl flex gap-2", storeFilter === s ? "bg-emerald-50 text-emerald-700" : "text-slate-700 hover:bg-slate-50/50")}>
+                          className={cn("w-full text-left px-3 py-2 text-sm font-medium rounded-xl flex gap-2", storeFilter === s ? "bg-emerald-50 text-emerald-700" : "text-slate-700 dark:text-slate-200 hover:bg-slate-50/50 dark:hover:bg-slate-700/50")}>
                           <Store size={14} /> {s}
                         </button>
                       ))}
@@ -121,9 +121,9 @@ export function ShoppingView({
             {showFilterMenu && <div className="fixed inset-0 z-40" onClick={() => setShowFilterMenu(false)} />}
           </div>
           <div className="flex gap-2 items-center">
-            <span className="text-xs font-medium text-slate-400 min-w-max mr-1">Prev: {formatCurrency(total)}</span>
+            <span className="text-xs font-medium text-slate-400 dark:text-slate-500 min-w-max mr-1">Prev: {formatCurrency(total)}</span>
             <button onClick={() => { if (window.confirm('Esvaziar carrinho inteiro?')) onUpdateItems([]); }}
-              className="p-2 bg-white/60 rounded-xl border border-red-100 text-red-500 hover:bg-red-50" title="Apagar tudo">
+              className="p-2 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-red-100 dark:border-red-900/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30" title="Apagar tudo">
               <Trash2 size={16} />
             </button>
           </div>
@@ -133,8 +133,8 @@ export function ShoppingView({
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-6 pb-40 space-y-6 relative">
         <AnimatePresence>
           {activeItems.length === 0 && (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center pt-20 text-slate-400 opacity-60">
-              <div className="bg-white p-6 rounded-full mb-4 shadow-sm"><ShoppingBag size={48} className="text-slate-300" /></div>
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center pt-20 text-slate-400 dark:text-slate-500 opacity-60">
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-full mb-4 shadow-sm"><ShoppingBag size={48} className="text-slate-300 dark:text-slate-600" /></div>
               <p className="font-bold text-lg">Carrinho vazio</p><p className="text-sm">Comece a adicionar itens</p>
             </motion.div>
           )}
@@ -151,7 +151,7 @@ export function ShoppingView({
                   return acc
                 }, {})).sort().map(([cat, items]: any) => (
                   <div key={cat} className="space-y-2">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">{cat} ({(items as any[]).length})</h3>
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2">{cat} ({(items as any[]).length})</h3>
                     <AnimatePresence>{(items as any[]).map((item: any) => (
                       <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
                     ))}</AnimatePresence>
@@ -165,7 +165,7 @@ export function ShoppingView({
                   return acc
                 }, {})).sort().map(([storeName, items]: any) => (
                   <div key={storeName} className="space-y-2">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2"><Store size={12} className="inline mr-1" />{storeName} ({(items as any[]).length})</h3>
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2"><Store size={12} className="inline mr-1" />{storeName} ({(items as any[]).length})</h3>
                     <AnimatePresence>{(items as any[]).map((item: any) => (
                       <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
                     ))}</AnimatePresence>
@@ -173,7 +173,7 @@ export function ShoppingView({
                 ))
               ) : (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2">Pendente ({pendingItems.length})</h3>
+                  <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2">Pendente ({pendingItems.length})</h3>
                   <AnimatePresence>{pendingItems.map((item) => (
                     <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
                   ))}</AnimatePresence>
@@ -195,7 +195,7 @@ export function ShoppingView({
         </AnimatePresence>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-6 pb-8 bg-gradient-to-t from-white via-white/95 to-transparent z-30">
+      <div className="absolute bottom-0 left-0 right-0 p-6 pb-8 bg-gradient-to-t from-white via-white/95 dark:from-slate-900 dark:via-slate-900/95 to-transparent z-30">
         <div className="flex items-end justify-between gap-4">
           <div className="pointer-events-auto flex-1">
             {activeItems.filter(i => i.checked).length > 0 && (<GlassButton onClick={onFinishShopping} className="w-full">Finalizar <ArrowRight size={18} /></GlassButton>)}
@@ -209,10 +209,10 @@ export function ShoppingView({
 
       {showBudgetModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl relative">
-            <button onClick={() => setShowBudgetModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 rounded-full hover:bg-slate-100"><X size={18} /></button>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl relative">
+            <button onClick={() => setShowBudgetModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 dark:bg-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600"><X size={18} /></button>
             <h3 className="font-bold text-lg mb-4">Definir Orçamento</h3>
-            <input type="number" placeholder="0.00" className="w-full text-4xl font-black text-center border-b-2 border-slate-100 pb-2 mb-6 outline-none focus:border-emerald-500" value={budget || ''} onChange={e => onSetBudget(parseFloat(e.target.value) || 0)} />
+            <input type="number" placeholder="0.00" className="w-full text-4xl font-black text-center border-b-2 border-slate-100 dark:border-slate-600 pb-2 mb-6 outline-none focus:border-emerald-500 bg-transparent text-slate-800 dark:text-slate-100" value={budget || ''} onChange={e => onSetBudget(parseFloat(e.target.value) || 0)} />
             <GlassButton onClick={() => setShowBudgetModal(false)} className="w-full">Salvar Meta</GlassButton>
           </motion.div>
         </div>

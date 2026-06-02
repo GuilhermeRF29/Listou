@@ -10,12 +10,13 @@ const HomeView = lazy(() => import('./views/HomeView').then(m => ({ default: m.H
 const ShoppingView = lazy(() => import('./views/ShoppingView').then(m => ({ default: m.ShoppingView })))
 const CatalogView = lazy(() => import('./views/CatalogView').then(m => ({ default: m.CatalogView })))
 const AnalyticsView = lazy(() => import('./views/AnalyticsView').then(m => ({ default: m.AnalyticsView })))
+const HistoryView = lazy(() => import('./views/HistoryView').then(m => ({ default: m.HistoryView })))
 const SavedListsView = lazy(() => import('./views/SavedListsView').then(m => ({ default: m.SavedListsView })))
 const FinishSaveView = lazy(() => import('./views/FinishSaveView').then(m => ({ default: m.FinishSaveView })))
 const SuccessView = lazy(() => import('./views/SuccessView').then(m => ({ default: m.SuccessView })))
 
 export default function App() {
-  const { user, signIn, signOut } = useAuth()
+  const { user, loading: authLoading, authError, dismissError, signIn, signOut } = useAuth()
   const s = useShoppingList(user)
   const [dark, setDark] = useState(() => localStorage.getItem('dark') === 'true')
   const [splashDone, setSplashDone] = useState(false)
@@ -83,6 +84,20 @@ export default function App() {
     <div className="relative w-full h-[100dvh] flex flex-col overflow-hidden bg-[#F8FAFC] dark:bg-slate-900 font-sans selection:bg-emerald-200">
       <style>{`* { -ms-overflow-style: none; scrollbar-width: none; } *::-webkit-scrollbar { display: none; }`}</style>
 
+      {authLoading && !user && splashDone && (
+        <div className="absolute inset-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /><p className="text-sm font-medium text-slate-500">Autenticando...</p></div>
+        </div>
+      )}
+
+      {authError && (
+        <div className="absolute top-20 left-4 right-4 z-50 bg-red-50 dark:bg-red-900/80 border border-red-200 dark:border-red-700 rounded-2xl p-4 shadow-xl flex items-start gap-3 max-w-md mx-auto">
+          <div className="text-red-500 text-lg leading-none mt-0.5">⚠</div>
+          <div className="flex-1"><p className="text-sm font-bold text-red-700 dark:text-red-200">Erro de autenticação</p><p className="text-xs text-red-600 dark:text-red-300 mt-1 leading-relaxed">{authError}</p></div>
+          <button onClick={dismissError} className="text-red-400 hover:text-red-600 p-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+      )}
+
       <div className="absolute inset-0 z-0 opacity-60 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[80%] h-[60%] bg-emerald-100/50 rounded-full blur-[120px] animate-pulse duration-[8000ms]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[50%] bg-blue-100/50 rounded-full blur-[120px] animate-pulse duration-[10000ms] delay-1000"></div>
@@ -97,6 +112,7 @@ export default function App() {
             activeCount={s.activeItems.length}
             catalogCount={s.catalog.length}
             savedListsCount={s.savedLists.length}
+            historyCount={s.history.length}
             totalSpent={s.history.reduce((acc, h) => acc + h.total, 0)}
             formatCurrency={s.formatCurrency}
             onSignIn={signIn}
@@ -169,6 +185,13 @@ export default function App() {
             onSetSelection={s.setAnalyticsSelection}
             onNavigate={s.setView}
             uniqueStores={s.uniqueStores}
+          />
+        )}
+        {s.view === 'history' && (
+          <HistoryView
+            history={s.history}
+            formatCurrency={s.formatCurrency}
+            onNavigate={s.setView}
           />
         )}
 

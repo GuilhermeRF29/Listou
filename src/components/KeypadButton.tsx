@@ -18,7 +18,7 @@ export const KeypadButton = memo(function KeypadButton({ value, onClick, icon, c
       onClick={(e) => { e.stopPropagation(); onClick(value) }}
       className={cn(
         "h-16 rounded-2xl font-medium text-2xl flex items-center justify-center",
-        "bg-white/80 backdrop-blur-sm border border-white/80 text-slate-700 shadow-sm",
+        "bg-white/80 dark:bg-slate-700/80 backdrop-blur-sm border border-white/80 dark:border-slate-600/80 text-slate-700 dark:text-slate-200 shadow-sm",
         className
       )}
     >

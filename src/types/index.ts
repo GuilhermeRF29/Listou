@@ -45,6 +45,6 @@ export interface SavedList {
   items: Item[]
 }
 
-export type View = 'home' | 'shopping' | 'catalog' | 'finish-save' | 'success' | 'saved-lists' | 'analytics'
+export type View = 'home' | 'shopping' | 'catalog' | 'finish-save' | 'success' | 'saved-lists' | 'analytics' | 'history'
 export type SortBy = 'alpha' | 'brand' | 'category' | 'price' | 'store'
 export type AnalyticsType = 'geral' | 'categoria' | 'produto' | 'marca' | 'mercado'

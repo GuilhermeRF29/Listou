@@ -13,7 +13,7 @@ interface GlassButtonProps {
 
 const variants: Record<string, string> = {
   primary: "bg-slate-900 border border-slate-800 text-white shadow-xl shadow-slate-900/20",
-  secondary: "bg-white/50 text-slate-700 border border-white/80 shadow-sm",
+  secondary: "bg-white/50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-200 border border-white/80 dark:border-slate-600/80 shadow-sm",
   emerald: "bg-emerald-500 border border-emerald-400 text-white shadow-xl shadow-emerald-500/20",
 }
 

@@ -89,22 +89,22 @@ export function AnalyticsView({ history, analyticsType, analyticsSelection, form
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-slate-900 overflow-hidden">
-      <div className="flex-shrink-0 z-20 bg-white/90 backdrop-blur-md pt-12 px-6 pb-6 border-b border-slate-100 shadow-sm space-y-4">
+      <div className="flex-shrink-0 z-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md pt-12 px-6 pb-6 border-b border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => onNavigate('home')} className="p-3 bg-white rounded-full shadow-sm text-slate-600 border border-slate-100 hover:bg-slate-50"><ArrowLeft size={20} /></button>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Análise</h2>
+          <button onClick={() => onNavigate('home')} className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-sm text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"><ArrowLeft size={20} /></button>
+          <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Análise</h2>
         </div>
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
           {(['geral', 'categoria', 'produto', 'marca', 'mercado'] as AnalyticsType[]).map(type => (
             <button key={type} onClick={() => { onSetType(type); onSetSelection('') }}
-              className={cn("px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors", analyticsType === type ? "bg-emerald-500 text-white" : "bg-white text-slate-500 border border-slate-200")}>
+              className={cn("px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors", analyticsType === type ? "bg-emerald-500 text-white" : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600")}>
               {type.charAt(0).toUpperCase() + type.slice(1)}
             </button>
           ))}
         </div>
         {analyticsType !== 'geral' && (
-          <div className="bg-white p-2 rounded-2xl border border-slate-200 focus-within:ring-2 ring-emerald-500/20">
-            <select className="w-full bg-transparent outline-none font-bold text-slate-700 p-2" value={analyticsSelection} onChange={e => onSetSelection(e.target.value)}>
+          <div className="bg-white dark:bg-slate-800 p-2 rounded-2xl border border-slate-200 dark:border-slate-600 focus-within:ring-2 ring-emerald-500/20">
+            <select className="w-full bg-transparent outline-none font-bold text-slate-700 dark:text-slate-200 p-2" value={analyticsSelection} onChange={e => onSetSelection(e.target.value)}>
               <option value="">Selecione um(a) {analyticsType}</option>
               {selectorOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
@@ -112,13 +112,13 @@ export function AnalyticsView({ history, analyticsType, analyticsSelection, form
         )}
       </div>
       <div className="flex-1 overflow-y-auto pb-10 px-6 pt-6 space-y-6">
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</span>
-          <span className="text-4xl font-black text-slate-900 tracking-tighter">{formatCurrency(analyticsType === 'geral' ? history.reduce((acc, h) => acc + h.total, 0) : totalSpent)}</span>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center">
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{title}</span>
+          <span className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tighter">{formatCurrency(analyticsType === 'geral' ? history.reduce((acc, h) => acc + h.total, 0) : totalSpent)}</span>
         </div>
         {chartData.length > 0 && (
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative">
-            <h3 className="font-bold text-lg text-slate-800 mb-6 px-1">{chartTitle}</h3>
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-6 px-1">{chartTitle}</h3>
             <div className="h-48 w-full -ml-3">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -137,8 +137,8 @@ export function AnalyticsView({ history, analyticsType, analyticsSelection, form
           </div>
         )}
         {pieData.length > 0 && analyticsType === 'geral' && (
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-4">
-            <h3 className="font-bold text-lg text-slate-800 mb-4">Por Categoria</h3>
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 mb-4">
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-4">Por Categoria</h3>
             <div className="space-y-4">
               {pieData.map((d, i) => {
                 const total = pieData.reduce((acc, curr) => acc + curr.value, 0)
@@ -146,10 +146,10 @@ export function AnalyticsView({ history, analyticsType, analyticsSelection, form
                 return (
                   <div key={i}>
                     <div className="flex justify-between items-end mb-1 text-sm">
-                      <span className="font-bold text-slate-700">{d.name}</span>
-                      <span className="font-medium text-slate-500">{formatCurrency(d.value)} ({pct}%)</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-200">{d.name}</span>
+                      <span className="font-medium text-slate-500 dark:text-slate-400">{formatCurrency(d.value)} ({pct}%)</span>
                     </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }}></div>
                     </div>
                   </div>

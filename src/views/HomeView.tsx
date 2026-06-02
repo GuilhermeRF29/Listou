@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { LogIn, LogOut, Plus, Package, List, BarChart3, Moon, Sun, Download, FileSpreadsheet } from 'lucide-react'
+import { LogIn, LogOut, Plus, Package, List, BarChart3, Moon, Sun, Download, FileSpreadsheet, History } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
 import { cn } from '../lib/cn'
 import type { View, Item, CatalogItem, SavedList, HistoryEntry } from '../types'
@@ -9,6 +9,7 @@ interface HomeViewProps {
   activeCount: number
   catalogCount: number
   savedListsCount: number
+  historyCount: number
   totalSpent: number
   formatCurrency: (v: number) => string
   onSignIn: () => void
@@ -19,7 +20,7 @@ interface HomeViewProps {
   exportData?: { activeItems: Item[]; catalog: CatalogItem[]; savedLists: SavedList[]; history: HistoryEntry[]; budget: number }
 }
 
-export function HomeView({ user, activeCount, catalogCount, savedListsCount, totalSpent, formatCurrency, onSignIn, onSignOut, onNavigate, dark, onToggleDark, exportData }: HomeViewProps) {
+export function HomeView({ user, activeCount, catalogCount, savedListsCount, historyCount, totalSpent, formatCurrency, onSignIn, onSignOut, onNavigate, dark, onToggleDark, exportData }: HomeViewProps) {
   const handleExport = () => {
     if (!exportData) return
     const json = JSON.stringify(exportData, null, 2)
@@ -93,9 +94,13 @@ export function HomeView({ user, activeCount, catalogCount, savedListsCount, tot
         </GlassCard>
         <GlassCard onClick={() => onNavigate('saved-lists')} className="p-6 flex flex-col justify-between h-44 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition-colors">
           <div className="bg-purple-100/80 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 w-fit p-3 rounded-2xl mb-4"><List size={24} /></div>
-          <div><span className="block text-4xl font-bold text-slate-800 dark:text-slate-100 mb-1 tracking-tighter">{savedListsCount}</span><span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Modelos Prontos</span></div>
+          <div><span className="block text-4xl font-bold text-slate-800 dark:text-slate-100 mb-1 tracking-tighter">{savedListsCount}</span><span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Listas de Compra</span></div>
         </GlassCard>
-        <GlassCard onClick={() => onNavigate('analytics')} className="p-6 flex flex-col justify-between h-44 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors col-span-2">
+        <GlassCard onClick={() => onNavigate('history')} className="p-6 flex flex-col justify-between h-44 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/20 transition-colors">
+          <div className="bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 w-fit p-3 rounded-2xl mb-4"><History size={24} /></div>
+          <div><span className="block text-4xl font-bold text-slate-800 dark:text-slate-100 mb-1 tracking-tighter">{historyCount}</span><span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Compras</span></div>
+        </GlassCard>
+        <GlassCard onClick={() => onNavigate('analytics')} className="p-6 flex flex-col justify-between h-44 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors">
           <div className="flex justify-between items-start"><div className="bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 w-fit p-3 rounded-2xl"><BarChart3 size={24} /></div><div className="bg-blue-50 dark:bg-blue-900/50 px-3 py-1 rounded-lg text-blue-600 dark:text-blue-300 text-xs font-bold flex items-center gap-1"><BarChart3 size={12} /> Análise</div></div>
           <div><span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Total Acumulado</span><span className="block text-3xl font-black text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{formatCurrency(totalSpent)}</span></div>
         </GlassCard>
