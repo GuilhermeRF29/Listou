@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, memo, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { ArrowLeft, Package, Search, Filter, Plus, Edit3, Trash2, Tag, Scale, Store } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
@@ -18,17 +18,29 @@ interface CatalogViewProps {
   onAddNew: () => void
 }
 
-export function CatalogView({ catalog, sortBy, formatCurrency, onSetSortBy, onNavigate, onEdit, onDelete, onAddNew }: CatalogViewProps) {
+export const CatalogView = memo(function CatalogView({ catalog, sortBy, formatCurrency, onSetSortBy, onNavigate, onEdit, onDelete, onAddNew }: CatalogViewProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [showFilter, setShowFilter] = useState(false)
 
-  const sorted = [...catalog].sort((a, b) => {
-    if (sortBy === 'alpha') return a.name.localeCompare(b.name)
-    if (sortBy === 'brand') return (a.brand || '').localeCompare(b.brand || '')
-    if (sortBy === 'category') return (a.category || 'Geral').localeCompare(b.category || 'Geral')
-    return 0
-  })
-  const filtered = sorted.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 150)
+    return () => clearTimeout(t)
+  }, [searchTerm])
+
+  const sorted = useMemo(() => {
+    return [...catalog].sort((a, b) => {
+      if (sortBy === 'alpha') return a.name.localeCompare(b.name)
+      if (sortBy === 'brand') return (a.brand || '').localeCompare(b.brand || '')
+      if (sortBy === 'category') return (a.category || 'Geral').localeCompare(b.category || 'Geral')
+      return 0
+    })
+  }, [catalog, sortBy])
+
+  const filtered = useMemo(
+    () => sorted.filter(c => c.name.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [sorted, debouncedSearch]
+  )
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-slate-900 overflow-hidden">
@@ -78,4 +90,4 @@ export function CatalogView({ catalog, sortBy, formatCurrency, onSetSortBy, onNa
       </div>
     </motion.div>
   )
-}
+})

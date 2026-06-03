@@ -18,3 +18,15 @@
 }
 
 .bg-page { background-color: var(--bg-page); }
+
+@media (max-width: 640px) {
+  .backdrop-blur-xl, .backdrop-blur-3xl, .backdrop-blur-sm, .backdrop-blur-md,
+  .backdrop-blur-2xl, [class*="backdrop-blur-"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .backdrop-blur-\[2px\] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

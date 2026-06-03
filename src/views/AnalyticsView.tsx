@@ -1,3 +1,4 @@
+import { useMemo, memo } from 'react'
 import { motion } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip as RechartsTooltip } from 'recharts'
@@ -15,71 +16,72 @@ interface AnalyticsViewProps {
   onNavigate: (v: View) => void
 }
 
-export function AnalyticsView({ history, analyticsType, analyticsSelection, formatCurrency, uniqueStores, onSetType, onSetSelection, onNavigate }: AnalyticsViewProps) {
-  const allItems = history.flatMap(h => h.items)
-  const uniqueCategories = Array.from(new Set(allItems.map(i => i.category || 'Outros'))).sort()
-  const uniqueProducts = Array.from(new Set(allItems.map(i => i.name))).sort()
-  const uniqueBrands = Array.from(new Set(allItems.map(i => i.brand).filter(b => b))).sort()
+export const AnalyticsView = memo(function AnalyticsView({ history, analyticsType, analyticsSelection, formatCurrency, uniqueStores, onSetType, onSetSelection, onNavigate }: AnalyticsViewProps) {
+  const { allItems, uniqueCategories, uniqueProducts, uniqueBrands } = useMemo(() => {
+    const items = history.flatMap(h => h.items)
+    return {
+      allItems: items,
+      uniqueCategories: Array.from(new Set(items.map(i => i.category || 'Outros'))).sort(),
+      uniqueProducts: Array.from(new Set(items.map(i => i.name))).sort(),
+      uniqueBrands: Array.from(new Set(items.map(i => i.brand).filter(b => b))).sort(),
+    }
+  }, [history])
 
-  let filteredItems = allItems
-  let title = "Gasto Histórico Total"
-  let chartTitle = "Últimas Compras"
+  const { totalSpent, chartData, categoryData } = useMemo(() => {
+    let filtered = allItems
+    if (analyticsType === 'categoria' && analyticsSelection) {
+      filtered = allItems.filter(i => (i.category || 'Outros') === analyticsSelection)
+    } else if (analyticsType === 'produto' && analyticsSelection) {
+      filtered = allItems.filter(i => i.name === analyticsSelection)
+    } else if (analyticsType === 'marca' && analyticsSelection) {
+      filtered = allItems.filter(i => i.brand === analyticsSelection)
+    } else if (analyticsType === 'mercado' && analyticsSelection) {
+      filtered = allItems.filter(i => i.store === analyticsSelection)
+    }
 
-  if (analyticsType === 'categoria' && analyticsSelection) {
-    filteredItems = allItems.filter(i => (i.category || 'Outros') === analyticsSelection)
-    title = `Gasto: ${analyticsSelection}`
-    chartTitle = `Variação Ref. Categoria`
-  } else if (analyticsType === 'produto' && analyticsSelection) {
-    filteredItems = allItems.filter(i => i.name === analyticsSelection)
-    title = `Gasto: ${analyticsSelection}`
-    chartTitle = `Variação do Preço Unitário`
-  } else if (analyticsType === 'marca' && analyticsSelection) {
-    filteredItems = allItems.filter(i => i.brand === analyticsSelection)
-    title = `Gasto: ${analyticsSelection}`
-    chartTitle = `Gastos com a Marca`
-  } else if (analyticsType === 'mercado' && analyticsSelection) {
-    filteredItems = allItems.filter(i => i.store === analyticsSelection)
-    title = `Gasto: ${analyticsSelection}`
-    chartTitle = `Gastos no Mercado`
-  }
+    const spent = filtered.reduce((acc, i) => acc + (i.price * i.quantity), 0)
 
-  const totalSpent = filteredItems.reduce((acc, i) => acc + (i.price * i.quantity), 0)
-
-  let chartData: any[] = []
-  if (analyticsType === 'geral') {
-    chartData = history.slice(-7).map(h => {
-      const dateObj = new Date(h.date)
-      return { name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`, valor: h.total }
-    })
-  } else if (analyticsType === 'produto' && analyticsSelection) {
-    history.forEach(h => {
-      const item = h.items.find(i => i.name === analyticsSelection)
-      if (item) {
+    let chart: any[] = []
+    if (analyticsType === 'geral') {
+      chart = history.slice(-7).map(h => {
         const dateObj = new Date(h.date)
-        chartData.push({ name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`, valor: item.price })
-      }
-    })
-  } else {
-    history.forEach(h => {
-      const sum = h.items.filter(i =>
-        (analyticsType === 'categoria' ? (i.category || 'Outros') === analyticsSelection : false) ||
-        (analyticsType === 'marca' ? i.brand === analyticsSelection : false) ||
-        (analyticsType === 'mercado' ? i.store === analyticsSelection : false)
-      ).reduce((acc, i) => acc + (i.price * i.quantity), 0)
-      if (sum > 0) {
-        const dateObj = new Date(h.date)
-        chartData.push({ name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`, valor: sum })
-      }
-    })
-  }
+        return { name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`, valor: h.total }
+      })
+    } else if (analyticsType === 'produto' && analyticsSelection) {
+      history.forEach(h => {
+        const item = h.items.find(i => i.name === analyticsSelection)
+        if (item) {
+          const dateObj = new Date(h.date)
+          chart.push({ name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`, valor: item.price })
+        }
+      })
+    } else {
+      history.forEach(h => {
+        const sum = h.items.filter(i =>
+          (analyticsType === 'categoria' ? (i.category || 'Outros') === analyticsSelection : false) ||
+          (analyticsType === 'marca' ? i.brand === analyticsSelection : false) ||
+          (analyticsType === 'mercado' ? i.store === analyticsSelection : false)
+        ).reduce((acc, i) => acc + (i.price * i.quantity), 0)
+        if (sum > 0) {
+          const dateObj = new Date(h.date)
+          chart.push({ name: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`, valor: sum })
+        }
+      })
+    }
 
-  const categoryData = filteredItems.reduce((acc: any, item: any) => {
-    const cat = item.category || 'Outros'
-    acc[cat] = (acc[cat] || 0) + (item.price * item.quantity)
-    return acc
-  }, {})
+    const cats = filtered.reduce((acc: any, item: any) => {
+      const cat = item.category || 'Outros'
+      acc[cat] = (acc[cat] || 0) + (item.price * item.quantity)
+      return acc
+    }, {})
 
-  const pieData = Object.keys(categoryData).map(k => ({ name: k, value: categoryData[k] })).sort((a, b) => b.value - a.value)
+    return { totalSpent: spent, chartData: chart, categoryData: cats }
+  }, [allItems, history, analyticsType, analyticsSelection])
+
+  const pieData = useMemo(
+    () => Object.keys(categoryData).map(k => ({ name: k, value: categoryData[k] })).sort((a, b) => b.value - a.value),
+    [categoryData]
+  )
 
   let selectorOptions: string[] = []
   if (analyticsType === 'categoria') selectorOptions = uniqueCategories
@@ -113,12 +115,12 @@ export function AnalyticsView({ history, analyticsType, analyticsSelection, form
       </div>
       <div className="flex-1 overflow-y-auto pb-10 px-6 pt-6 space-y-6">
         <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{title}</span>
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{analyticsType === 'geral' ? 'Gasto Histórico Total' : `Gasto: ${analyticsSelection} ${analyticsType}`}</span>
           <span className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tighter">{formatCurrency(analyticsType === 'geral' ? history.reduce((acc, h) => acc + h.total, 0) : totalSpent)}</span>
         </div>
         {chartData.length > 0 && (
           <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
-            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-6 px-1">{chartTitle}</h3>
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-6 px-1">{analyticsType === 'geral' ? 'Últimas Compras' : analyticsType === 'produto' ? 'Variação do Preço Unitário' : 'Gastos'}</h3>
             <div className="h-48 w-full -ml-3">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -161,4 +163,4 @@ export function AnalyticsView({ history, analyticsType, analyticsSelection, form
       </div>
     </motion.div>
   )
-}
+})

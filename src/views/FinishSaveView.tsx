@@ -1,3 +1,4 @@
+import { useMemo, memo } from 'react'
 import { motion } from 'motion/react'
 import { Sparkles, TrendingDown, TrendingUp, Save } from 'lucide-react'
 import { GlassButton } from '../components/GlassButton'
@@ -14,15 +15,17 @@ interface FinishSaveViewProps {
   onSaveAndClose: (saveList: boolean) => void
 }
 
-export function FinishSaveView({ activeItems, getLastPrice, checkedTotal, formatCurrency, listName, onSetListName, onSaveAndClose }: FinishSaveViewProps) {
-  const boughtItems = activeItems.filter(i => i.checked)
-  let savings = 0
-  let comparisonAvailable = false
-  boughtItems.forEach(item => {
-    const prevPrice = getLastPrice(item.name)
-    if (prevPrice && prevPrice > 0) { comparisonAvailable = true; savings += (prevPrice - item.price) * item.quantity }
-  })
-  const expensive = savings < 0
+export const FinishSaveView = memo(function FinishSaveView({ activeItems, getLastPrice, checkedTotal, formatCurrency, listName, onSetListName, onSaveAndClose }: FinishSaveViewProps) {
+  const { boughtItems, savings, comparisonAvailable, expensive } = useMemo(() => {
+    const items = activeItems.filter(i => i.checked)
+    let totalSavings = 0
+    let hasComparison = false
+    items.forEach(item => {
+      const prevPrice = getLastPrice(item.name)
+      if (prevPrice && prevPrice > 0) { hasComparison = true; totalSavings += (prevPrice - item.price) * item.quantity }
+    })
+    return { boughtItems: items, savings: totalSavings, comparisonAvailable: hasComparison, expensive: totalSavings < 0 }
+  }, [activeItems, getLastPrice])
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-slate-900 overflow-hidden">
@@ -48,4 +51,4 @@ export function FinishSaveView({ activeItems, getLastPrice, checkedTotal, format
       </div>
     </motion.div>
   )
-}
+})

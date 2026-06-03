@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowLeft, ChevronDown, ShoppingBag, TrendingDown, TrendingUp, FileSpreadsheet, Calendar, Check } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ShoppingBag, FileSpreadsheet, Calendar, Check } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
 import { cn } from '../lib/cn'
-import type { HistoryEntry, Item, View } from '../types'
+import type { HistoryEntry, View } from '../types'
 
 interface HistoryViewProps {
   history: HistoryEntry[]
@@ -11,19 +11,22 @@ interface HistoryViewProps {
   onNavigate: (v: View) => void
 }
 
-export function HistoryView({ history, formatCurrency, onNavigate }: HistoryViewProps) {
+export const HistoryView = memo(function HistoryView({ history, formatCurrency, onNavigate }: HistoryViewProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
-  const handleExportExcel = async () => {
-    const { exportExcel } = await import('../lib/exportExcel')
-    exportExcel({ activeItems: [], catalog: [], history })
-  }
+  const sorted = useMemo(
+    () => [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [history]
+  )
 
   const toggleExpand = useCallback((id: number) => {
     setExpandedId(prev => prev === id ? null : id)
   }, [])
 
-  const sorted = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const handleExportExcel = useCallback(async () => {
+    const { exportExcel } = await import('../lib/exportExcel')
+    exportExcel({ activeItems: [], catalog: [], history })
+  }, [history])
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-slate-900 overflow-hidden">
@@ -69,9 +72,9 @@ export function HistoryView({ history, formatCurrency, onNavigate }: HistoryView
                     <ChevronDown size={20} className={cn("text-slate-400 transition-transform duration-300", isOpen && "rotate-180")} />
                   </div>
                 </div>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {isOpen && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <motion.div key="expanded" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                       <div className="h-px bg-slate-100 dark:bg-slate-700 my-4" />
                       <div className="space-y-3">
                         {entry.items.map((item, idx) => (
@@ -106,4 +109,4 @@ export function HistoryView({ history, formatCurrency, onNavigate }: HistoryView
       </div>
     </motion.div>
   )
-}
+})

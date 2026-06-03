@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Home, Plus, Wallet, Trash2, ShoppingBag, ArrowRight, Check, ChevronDown, SortAsc, Tag, List, TrendingDown, Filter, X, ArrowDown, Store } from 'lucide-react'
+import { Home, Plus, Wallet, Trash2, ShoppingBag, ArrowRight, Check, ChevronDown, SortAsc, Tag, List, TrendingDown, Filter, X, Store } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
 import { GlassButton } from '../components/GlassButton'
 import { SwipeableItem } from '../components/SwipeableItem'
@@ -28,7 +28,7 @@ interface ShoppingViewProps {
   onOpenInputModal: () => void
 }
 
-export function ShoppingView({
+export const ShoppingView = memo(function ShoppingView({
   activeItems, budget, catalog, sortBy, checkedTotal, total, formatCurrency, getLastPrice, uniqueStores,
   onNavigate, onUpdateItems, onSetBudget, onSetSortBy,
   onOpenEdit, onViewDetails, onFinishShopping, onOpenInputModal,
@@ -37,20 +37,26 @@ export function ShoppingView({
   const [showBudgetModal, setShowBudgetModal] = useState(false)
   const [storeFilter, setStoreFilter] = useState('')
 
-  const progress = budget > 0 ? Math.min((checkedTotal / budget) * 100, 100) : 0
+  const progress = useMemo(() => budget > 0 ? Math.min((checkedTotal / budget) * 100, 100) : 0, [budget, checkedTotal])
   const isOverBudget = budget > 0 && checkedTotal > budget
 
-  const filteredItems = storeFilter ? activeItems.filter(i => i.store === storeFilter) : activeItems
+  const filteredItems = useMemo(
+    () => storeFilter ? activeItems.filter(i => i.store === storeFilter) : activeItems,
+    [activeItems, storeFilter]
+  )
 
-  const sortItems = useCallback((items: Item[]) => {
-    let sorted = [...items]
+  const sortedItems = useMemo(() => {
+    let sorted = [...filteredItems]
     if (sortBy === 'alpha') sorted.sort((a, b) => a.name.localeCompare(b.name))
     if (sortBy === 'brand') sorted.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''))
     if (sortBy === 'category') sorted.sort((a, b) => (a.category || 'Geral').localeCompare(b.category || 'Geral'))
     if (sortBy === 'price') sorted.sort((a, b) => (b.price * b.quantity) - (a.price * a.quantity))
     if (sortBy === 'store') sorted.sort((a, b) => (a.store || '').localeCompare(b.store || ''))
     return sorted
-  }, [sortBy])
+  }, [filteredItems, sortBy])
+
+  const cartItems = useMemo(() => sortedItems.filter(i => i.checked), [sortedItems])
+  const pendingItems = useMemo(() => sortedItems.filter(i => !i.checked), [sortedItems])
 
   const handleToggle = useCallback((id: number) => {
     onUpdateItems((items: Item[]) => items.map(i => i.id === id ? { ...i, checked: !i.checked } : i))
@@ -68,9 +74,29 @@ export function ShoppingView({
     onViewDetails(item)
   }, [onViewDetails])
 
-  const sortedItems = sortItems(filteredItems)
-  const cartItems = sortedItems.filter(i => i.checked)
-  const pendingItems = sortedItems.filter(i => !i.checked)
+  const renderItem = useCallback((item: Item) => (
+    <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
+  ), [getLastPrice, handleToggle, handleEdit, handleDelete, handleViewDetails])
+
+  const groupedByCategory = useMemo(() => {
+    if (sortBy !== 'category') return null
+    return Object.entries(pendingItems.reduce((acc: any, item: any) => {
+      const cat = item.category || 'Geral'
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(item)
+      return acc
+    }, {})).sort()
+  }, [pendingItems, sortBy])
+
+  const groupedByStore = useMemo(() => {
+    if (sortBy !== 'store') return null
+    return Object.entries(pendingItems.reduce((acc: any, item: any) => {
+      const s = item.store || 'Sem mercado'
+      if (!acc[s]) acc[s] = []
+      acc[s].push(item)
+      return acc
+    }, {})).sort()
+  }, [pendingItems, sortBy])
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-slate-900 overflow-hidden">
@@ -142,41 +168,25 @@ export function ShoppingView({
 
         <AnimatePresence>
           {pendingItems.length > 0 && (
-            <motion.div layout className="space-y-6">
-              {sortBy === 'category' ? (
-                Object.entries(pendingItems.reduce((acc: any, item: any) => {
-                  const cat = item.category || 'Geral'
-                  if (!acc[cat]) acc[cat] = []
-                  acc[cat].push(item)
-                  return acc
-                }, {})).sort().map(([cat, items]: any) => (
+            <motion.div className="space-y-6">
+              {groupedByCategory ? (
+                groupedByCategory.map(([cat, items]: any) => (
                   <div key={cat} className="space-y-2">
-                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2">{cat} ({(items as any[]).length})</h3>
-                    <AnimatePresence>{(items as any[]).map((item: any) => (
-                      <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
-                    ))}</AnimatePresence>
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2">{cat} ({items.length})</h3>
+                    <AnimatePresence initial={false}>{items.map((item: any) => renderItem(item))}</AnimatePresence>
                   </div>
                 ))
-              ) : sortBy === 'store' ? (
-                Object.entries(pendingItems.reduce((acc: any, item: any) => {
-                  const s = item.store || 'Sem mercado'
-                  if (!acc[s]) acc[s] = []
-                  acc[s].push(item)
-                  return acc
-                }, {})).sort().map(([storeName, items]: any) => (
+              ) : groupedByStore ? (
+                groupedByStore.map(([storeName, items]: any) => (
                   <div key={storeName} className="space-y-2">
-                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2"><Store size={12} className="inline mr-1" />{storeName} ({(items as any[]).length})</h3>
-                    <AnimatePresence>{(items as any[]).map((item: any) => (
-                      <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
-                    ))}</AnimatePresence>
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2"><Store size={12} className="inline mr-1" />{storeName} ({items.length})</h3>
+                    <AnimatePresence initial={false}>{items.map((item: any) => renderItem(item))}</AnimatePresence>
                   </div>
                 ))
               ) : (
                 <div className="space-y-2">
                   <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-2">Pendente ({pendingItems.length})</h3>
-                  <AnimatePresence>{pendingItems.map((item) => (
-                    <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
-                  ))}</AnimatePresence>
+                  <AnimatePresence initial={false}>{pendingItems.map(renderItem)}</AnimatePresence>
                 </div>
               )}
             </motion.div>
@@ -185,11 +195,9 @@ export function ShoppingView({
 
         <AnimatePresence>
           {cartItems.length > 0 && (
-            <motion.div layout className="space-y-2 pt-4">
+            <motion.div className="space-y-2 pt-4">
               <div className="flex items-center gap-2 mb-3 ml-1 opacity-80"><div className="h-[1px] flex-1 bg-emerald-200/50"></div><span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-1"><Check size={10} /> Concluídos ({cartItems.length})</span><div className="h-[1px] flex-1 bg-emerald-200/50"></div></div>
-              <AnimatePresence>{cartItems.map((item) => (
-                <SwipeableItem key={item.id} item={item} lastPrice={getLastPrice(item.name)} onToggle={handleToggle} onPriceClick={handleEdit} onEdit={handleEdit} onDelete={handleDelete} onViewDetails={handleViewDetails} />
-              ))}</AnimatePresence>
+              <AnimatePresence initial={false}>{cartItems.map(renderItem)}</AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
@@ -219,4 +227,4 @@ export function ShoppingView({
       )}
     </motion.div>
   )
-}
+})

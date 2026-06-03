@@ -1,10 +1,8 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from './hooks/useAuth'
-import { useShoppingList } from './hooks/useShoppingList'
-import { InputModal } from './components/InputModal'
-import { NutritionDetails } from './components/NutritionDetails'
-import BarcodeScanner from './components/BarcodeScanner'
+import { useFirebaseSync } from './hooks/useFirebaseSync'
+import { useShoppingStore, useTotal, useCheckedTotal, useUniqueStores } from './store/useShoppingStore'
 
 const HomeView = lazy(() => import('./views/HomeView').then(m => ({ default: m.HomeView })))
 const ShoppingView = lazy(() => import('./views/ShoppingView').then(m => ({ default: m.ShoppingView })))
@@ -14,12 +12,48 @@ const HistoryView = lazy(() => import('./views/HistoryView').then(m => ({ defaul
 const SavedListsView = lazy(() => import('./views/SavedListsView').then(m => ({ default: m.SavedListsView })))
 const FinishSaveView = lazy(() => import('./views/FinishSaveView').then(m => ({ default: m.FinishSaveView })))
 const SuccessView = lazy(() => import('./views/SuccessView').then(m => ({ default: m.SuccessView })))
+const InputModal = lazy(() => import('./components/InputModal').then(m => ({ default: m.InputModal })))
+const NutritionDetails = lazy(() => import('./components/NutritionDetails').then(m => ({ default: m.NutritionDetails })))
+const BarcodeScanner = lazy(() => import('./components/BarcodeScanner'))
 
 export default function App() {
   const { user, loading: authLoading, authError, dismissError, signIn, signOut } = useAuth()
-  const s = useShoppingList(user)
   const [dark, setDark] = useState(() => localStorage.getItem('dark') === 'true')
   const [splashDone, setSplashDone] = useState(false)
+
+  useFirebaseSync(user)
+
+  const view = useShoppingStore(s => s.view)
+  const activeItems = useShoppingStore(s => s.activeItems)
+  const catalog = useShoppingStore(s => s.catalog)
+  const savedLists = useShoppingStore(s => s.savedLists)
+  const history = useShoppingStore(s => s.history)
+  const budget = useShoppingStore(s => s.budget)
+  const sortBy = useShoppingStore(s => s.sortBy)
+  const showInputModal = useShoppingStore(s => s.showInputModal)
+  const showScanner = useShoppingStore(s => s.showScanner)
+  const viewingItemDetails = useShoppingStore(s => s.viewingItemDetails)
+  const listName = useShoppingStore(s => s.listName)
+  const analyticsType = useShoppingStore(s => s.analyticsType)
+  const analyticsSelection = useShoppingStore(s => s.analyticsSelection)
+  const total = useTotal()
+  const checkedTotal = useCheckedTotal()
+  const uniqueStores = useUniqueStores()
+
+  const formatCurrency = useShoppingStore(s => s.formatCurrency)
+  const getLastPrice = useShoppingStore(s => s.getLastPrice)
+  const setView = useShoppingStore(s => s.setView)
+  const setBudget = useShoppingStore(s => s.setBudget)
+  const setSortBy = useShoppingStore(s => s.setSortBy)
+  const setListName = useShoppingStore(s => s.setListName)
+  const updateActiveItems = useShoppingStore(s => s.updateActiveItems)
+  const openForEdit = useShoppingStore(s => s.openForEdit)
+  const setViewingItemDetails = useShoppingStore(s => s.setViewingItemDetails)
+  const finishShopping = useShoppingStore(s => s.finishShopping)
+  const openInputModal = useShoppingStore(s => s.openInputModal)
+  const deleteFromCatalog = useShoppingStore(s => s.deleteFromCatalog)
+  const setAnalyticsType = useShoppingStore(s => s.setAnalyticsType)
+  const setAnalyticsSelection = useShoppingStore(s => s.setAnalyticsSelection)
 
   useEffect(() => {
     const t = setTimeout(() => setSplashDone(true), 1200)
@@ -31,34 +65,46 @@ export default function App() {
     localStorage.setItem('dark', String(dark))
   }, [dark])
 
+  const resetInputs = useShoppingStore(s => s.resetInputs)
+
   useEffect(() => {
-    if (user) {
-      const sItems = localStorage.getItem('listou_items')
-      if (sItems && JSON.parse(sItems).length > 0) {
-        s.updateActiveItems(JSON.parse(sItems))
-        localStorage.removeItem('listou_items')
-        localStorage.removeItem('listou_saved_lists')
-        localStorage.removeItem('listou_history')
-        localStorage.removeItem('listou_catalog')
-        localStorage.removeItem('listou_budget')
+    const isMobile = 'ontouchstart' in window
+    window.scrollTo({ top: 0, behavior: isMobile ? 'auto' : 'smooth' })
+    useShoppingStore.getState().setShowInputModal(false)
+    useShoppingStore.getState().setShowScanner(false)
+    useShoppingStore.getState().setShowKeypad(false)
+    resetInputs()
+  }, [view])
+
+  useEffect(() => {
+    const onPopState = () => {
+      const st = useShoppingStore.getState()
+      if (st.showInputModal || st.showScanner || st.showBudgetModal || st.viewingItemDetails) {
+        st.setShowInputModal(false)
+        st.setShowScanner(false)
+        st.setShowBudgetModal(false)
+        st.setViewingItemDetails(null)
+        resetInputs()
+      } else if (st.view !== 'home' && st.view !== 'shopping' && st.view !== 'catalog') {
+        st.setView('home')
       }
     }
-  }, [user])
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  const totalSpent = useMemo(() => history.reduce((acc, h) => acc + h.total, 0), [history])
 
   const handleToggleDark = useCallback(() => setDark(d => !d), [])
-  const handleOpenEdit = useCallback((item: any) => s.openForEdit(item, false), [s.openForEdit])
-  const handleCatalogEdit = useCallback((item: any, isCatalog: boolean) => s.openForEdit(item, isCatalog), [s.openForEdit])
-  const handleLoadList = useCallback((items: any[]) => s.updateActiveItems(items), [s.updateActiveItems])
-  const handleToggleNutrition = useCallback(() => s.setShowNutrition(!s.showNutrition), [s.showNutrition, s.setShowNutrition])
-  const handleToggleManual = useCallback(() => s.setIsManualMode(!s.isManualMode), [s.isManualMode, s.setIsManualMode])
-  const handleToggleKeypad = useCallback(() => s.setShowKeypad(!s.showKeypad), [s.showKeypad, s.setShowKeypad])
-  const handleScannerOpen = useCallback(() => s.setShowScanner(true), [s.setShowScanner])
-  const handleCloseDetails = useCallback(() => s.setViewingItemDetails(null), [s.setViewingItemDetails])
-  const handleCloseScanner = useCallback(() => s.setShowScanner(false), [s.setShowScanner])
+  const handleOpenEdit = useCallback((item: any) => openForEdit(item, false), [openForEdit])
+  const handleCatalogEdit = useCallback((item: any, isCatalog: boolean) => openForEdit(item, isCatalog), [openForEdit])
+  const handleLoadList = useCallback((items: any[]) => updateActiveItems(items), [updateActiveItems])
+  const handleCloseDetails = useCallback(() => setViewingItemDetails(null), [setViewingItemDetails])
+  const handleCloseScanner = useCallback(() => useShoppingStore.getState().setShowScanner(false), [])
+
   const exportData = useMemo(() => ({
-    activeItems: s.activeItems, catalog: s.catalog,
-    savedLists: s.savedLists, history: s.history, budget: s.budget
-  }), [s.activeItems, s.catalog, s.savedLists, s.history, s.budget])
+    activeItems, catalog, savedLists, history, budget
+  }), [activeItems, catalog, savedLists, history, budget])
 
   return (
     <>
@@ -106,140 +152,109 @@ export default function App() {
 
       <div className="relative z-10 max-w-md mx-auto h-full w-full flex flex-col">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 font-medium">Carregando...</div>}>
-        {s.view === 'home' && (
+        {view === 'home' && (
           <HomeView
             user={user}
-            activeCount={s.activeItems.length}
-            catalogCount={s.catalog.length}
-            savedListsCount={s.savedLists.length}
-            historyCount={s.history.length}
-            totalSpent={s.history.reduce((acc, h) => acc + h.total, 0)}
-            formatCurrency={s.formatCurrency}
+            activeCount={activeItems.length}
+            catalogCount={catalog.length}
+            savedListsCount={savedLists.length}
+            historyCount={history.length}
+            totalSpent={totalSpent}
+            formatCurrency={formatCurrency}
             onSignIn={signIn}
             onSignOut={signOut}
-            onNavigate={s.setView}
+            onNavigate={setView}
             dark={dark}
             onToggleDark={handleToggleDark}
             exportData={exportData}
           />
         )}
-        {s.view === 'shopping' && (
+        {view === 'shopping' && (
           <ShoppingView
-            activeItems={s.activeItems}
-            budget={s.budget}
-            catalog={s.catalog}
-            sortBy={s.sortBy}
-            checkedTotal={s.checkedTotal}
-            total={s.total}
-            formatCurrency={s.formatCurrency}
-            getLastPrice={s.getLastPrice}
-            onNavigate={s.setView}
-            onUpdateItems={s.updateActiveItems}
-            onSetBudget={s.setBudget}
-            onSetSortBy={s.setSortBy}
+            activeItems={activeItems}
+            budget={budget}
+            catalog={catalog}
+            sortBy={sortBy}
+            checkedTotal={checkedTotal}
+            total={total}
+            formatCurrency={formatCurrency}
+            getLastPrice={getLastPrice}
+            onNavigate={setView}
+            onUpdateItems={updateActiveItems}
+            onSetBudget={setBudget}
+            onSetSortBy={setSortBy}
             onOpenEdit={handleOpenEdit}
-            onViewDetails={s.setViewingItemDetails}
-            onFinishShopping={s.finishShopping}
-            onOpenInputModal={s.openInputModal}
-            uniqueStores={s.uniqueStores}
+            onViewDetails={setViewingItemDetails}
+            onFinishShopping={finishShopping}
+            onOpenInputModal={openInputModal}
+            uniqueStores={uniqueStores}
           />
         )}
-        {s.view === 'catalog' && (
+        {view === 'catalog' && (
           <CatalogView
-            catalog={s.catalog}
-            sortBy={s.sortBy}
-            onSetSortBy={s.setSortBy}
-            onNavigate={s.setView}
-            formatCurrency={s.formatCurrency}
+            catalog={catalog}
+            sortBy={sortBy}
+            onSetSortBy={setSortBy}
+            onNavigate={setView}
+            formatCurrency={formatCurrency}
             onEdit={handleCatalogEdit}
-            onDelete={s.deleteFromCatalog}
-            onAddNew={s.openInputModal}
+            onDelete={deleteFromCatalog}
+            onAddNew={openInputModal}
           />
         )}
-        {s.view === 'saved-lists' && (
+        {view === 'saved-lists' && (
           <SavedListsView
-            savedLists={s.savedLists}
+            savedLists={savedLists}
             onLoadList={handleLoadList}
-            onNavigate={s.setView}
+            onNavigate={setView}
           />
         )}
-        {s.view === 'finish-save' && (
+        {view === 'finish-save' && (
           <FinishSaveView
-            activeItems={s.activeItems}
-            getLastPrice={s.getLastPrice}
-            checkedTotal={s.checkedTotal}
-            formatCurrency={s.formatCurrency}
-            listName={s.listName}
-            onSetListName={s.setListName}
-            onSaveAndClose={s.saveAndClose}
+            activeItems={activeItems}
+            getLastPrice={getLastPrice}
+            checkedTotal={checkedTotal}
+            formatCurrency={formatCurrency}
+            listName={listName}
+            onSetListName={setListName}
+            onSaveAndClose={useShoppingStore.getState().saveAndClose}
           />
         )}
-        {s.view === 'success' && <SuccessView />}
-        {s.view === 'analytics' && (
+        {view === 'success' && <SuccessView />}
+        {view === 'analytics' && (
           <AnalyticsView
-            history={s.history}
-            analyticsType={s.analyticsType}
-            analyticsSelection={s.analyticsSelection}
-            formatCurrency={s.formatCurrency}
-            onSetType={s.setAnalyticsType}
-            onSetSelection={s.setAnalyticsSelection}
-            onNavigate={s.setView}
-            uniqueStores={s.uniqueStores}
+            history={history}
+            analyticsType={analyticsType}
+            analyticsSelection={analyticsSelection}
+            formatCurrency={formatCurrency}
+            onSetType={setAnalyticsType}
+            onSetSelection={setAnalyticsSelection}
+            onNavigate={setView}
+            uniqueStores={uniqueStores}
           />
         )}
-        {s.view === 'history' && (
+        {view === 'history' && (
           <HistoryView
-            history={s.history}
-            formatCurrency={s.formatCurrency}
-            onNavigate={s.setView}
+            history={history}
+            formatCurrency={formatCurrency}
+            onNavigate={setView}
           />
         )}
 
-        <InputModal
-          show={s.showInputModal}
-          view={s.view}
-          isManualMode={s.isManualMode}
-          editingItemId={s.editingItemId}
-          inputName={s.inputName}
-          inputBrand={s.inputBrand}
-          inputType={s.inputType}
-          inputSize={s.inputSize}
-          inputPrice={s.inputPrice}
-          inputQty={s.inputQty}
-          inputEmoji={s.inputEmoji}
-          inputStore={s.inputStore}
-          nutrition={s.nutrition}
-          showNutrition={s.showNutrition}
-          showKeypad={s.showKeypad}
-          suggestions={s.suggestions}
-          analyzing={s.analyzing}
-          analyzeError={s.analyzeError}
-          onNameChange={s.setInputName}
-          onBrandChange={s.setInputBrand}
-          onTypeChange={s.setInputType}
-          onSizeChange={s.setInputSize}
-          onQtyChange={s.setInputQty}
-          onPriceChange={s.setInputPrice}
-          onEmojiChange={s.setInputEmoji}
-          onStoreChange={s.setInputStore}
-          onNutritionChange={s.setNutrition}
-            onToggleNutrition={handleToggleNutrition}
-            onToggleManual={handleToggleManual}
-            onToggleKeypad={handleToggleKeypad}
-          onKeypadPress={s.handleKeypadPress}
-          onSelectSuggestion={s.selectSuggestion}
-          onPhotoUpload={s.onPhotoUpload}
-            onScannerOpen={handleScannerOpen}
-          onConfirm={s.confirmItem}
-          onClose={s.closeInputModal}
-        />
+        <Suspense fallback={null}>
+          {showInputModal && <InputModal />}
         </Suspense>
 
-        <NutritionDetails item={s.viewingItemDetails} onClose={handleCloseDetails} />
+        <Suspense fallback={null}>
+          {viewingItemDetails && <NutritionDetails item={viewingItemDetails} onClose={handleCloseDetails} />}
+        </Suspense>
 
-        {s.showScanner && (
-          <BarcodeScanner onScan={s.onBarcodeScan} onContinuousAdd={s.onContinuousBarcodeScan} onClose={handleCloseScanner} />
+        {showScanner && (
+          <Suspense fallback={null}>
+            <BarcodeScanner onScan={useShoppingStore.getState().onBarcodeScan} onContinuousAdd={useShoppingStore.getState().onContinuousBarcodeScan} onClose={handleCloseScanner} />
+          </Suspense>
         )}
+        </Suspense>
       </div>
     </div>
     </>

@@ -1,7 +1,7 @@
+import { memo, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { LogIn, LogOut, Plus, Package, List, BarChart3, Moon, Sun, Download, FileSpreadsheet, History } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
-import { cn } from '../lib/cn'
 import type { View, Item, CatalogItem, SavedList, HistoryEntry } from '../types'
 
 interface HomeViewProps {
@@ -20,8 +20,8 @@ interface HomeViewProps {
   exportData?: { activeItems: Item[]; catalog: CatalogItem[]; savedLists: SavedList[]; history: HistoryEntry[]; budget: number }
 }
 
-export function HomeView({ user, activeCount, catalogCount, savedListsCount, historyCount, totalSpent, formatCurrency, onSignIn, onSignOut, onNavigate, dark, onToggleDark, exportData }: HomeViewProps) {
-  const handleExport = () => {
+export const HomeView = memo(function HomeView({ user, activeCount, catalogCount, savedListsCount, historyCount, totalSpent, formatCurrency, onSignIn, onSignOut, onNavigate, dark, onToggleDark, exportData }: HomeViewProps) {
+  const handleExport = useCallback(() => {
     if (!exportData) return
     const json = JSON.stringify(exportData, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
@@ -31,13 +31,14 @@ export function HomeView({ user, activeCount, catalogCount, savedListsCount, his
     a.download = `listou_${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
-  }
+  }, [exportData])
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = useCallback(async () => {
     if (!exportData) return
     const { exportExcel } = await import('../lib/exportExcel')
     exportExcel({ activeItems: exportData.activeItems, catalog: exportData.catalog, history: exportData.history })
-  }
+  }, [exportData])
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 flex flex-col pt-12 px-6 pb-24 overflow-y-auto space-y-6 dark:[--bg-page:#0f172a]">
       <div className="flex justify-between items-center mb-2">
@@ -117,4 +118,4 @@ export function HomeView({ user, activeCount, catalogCount, savedListsCount, his
       </div>
     </motion.div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { ArrowLeft, ShoppingBag, Check, ChevronDown, List } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
@@ -11,7 +11,7 @@ interface SavedListsViewProps {
   onNavigate: (v: View) => void
 }
 
-export function SavedListsView({ savedLists, onLoadList, onNavigate }: SavedListsViewProps) {
+export const SavedListsView = memo(function SavedListsView({ savedLists, onLoadList, onNavigate }: SavedListsViewProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
   const toggleExpand = useCallback((id: number) => {
@@ -49,9 +49,9 @@ export function SavedListsView({ savedLists, onLoadList, onNavigate }: SavedList
                   </div>
                   <ChevronDown size={20} className={cn("text-slate-400 shrink-0 transition-transform duration-300", isOpen && "rotate-180")} />
                 </div>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {isOpen && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <motion.div key="expanded" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                       <div className="h-px bg-slate-100 dark:bg-slate-700 my-4" />
                       <div className="space-y-2 mb-4">
                         {list.items.map((item, idx) => (
@@ -78,4 +78,4 @@ export function SavedListsView({ savedLists, onLoadList, onNavigate }: SavedList
       </div>
     </motion.div>
   )
-}
+})
