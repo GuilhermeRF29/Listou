@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from './hooks/useAuth'
 import { useFirebaseSync } from './hooks/useFirebaseSync'
 import { useShoppingStore, useTotal, useCheckedTotal, useUniqueStores } from './store/useShoppingStore'
+import { UpdateBanner } from './components/UpdateBanner'
 
 const HomeView = lazy(() => import('./views/HomeView').then(m => ({ default: m.HomeView })))
 const ShoppingView = lazy(() => import('./views/ShoppingView').then(m => ({ default: m.ShoppingView })))
@@ -255,6 +256,8 @@ export default function App() {
           </Suspense>
         )}
         </Suspense>
+
+        <UpdateBanner />
       </div>
     </div>
     </>
