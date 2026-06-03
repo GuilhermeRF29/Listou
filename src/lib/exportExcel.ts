@@ -37,6 +37,7 @@ export async function exportExcel(data: {
   catalog: CatalogItem[]
   history: HistoryEntry[]
 }) {
+  try {
   const wb = new ExcelJS.Workbook()
 
   wb.creator = 'Listou'
@@ -129,6 +130,12 @@ export async function exportExcel(data: {
   const a = document.createElement('a')
   a.href = url
   a.download = `listou_${dateStr}.xlsx`
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 10000)
+  } catch (e) {
+    console.error('ExcelJS error:', e)
+    throw new Error('Falha ao gerar planilha Excel')
+  }
 }

@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { LogIn, LogOut, Plus, Package, List, BarChart3, Moon, Sun, Download, FileSpreadsheet, History } from 'lucide-react'
 import { GlassCard } from '../components/GlassCard'
+import { exportExcel } from '../lib/exportExcel'
 import type { View, Item, CatalogItem, SavedList, HistoryEntry } from '../types'
 
 interface HomeViewProps {
@@ -35,8 +36,12 @@ export const HomeView = memo(function HomeView({ user, activeCount, catalogCount
 
   const handleExportExcel = useCallback(async () => {
     if (!exportData) return
-    const { exportExcel } = await import('../lib/exportExcel')
-    exportExcel({ activeItems: exportData.activeItems, catalog: exportData.catalog, history: exportData.history })
+    try {
+      await exportExcel({ activeItems: exportData.activeItems, catalog: exportData.catalog, history: exportData.history })
+    } catch (e) {
+      console.error('Erro ao exportar Excel:', e)
+      alert('Erro ao gerar planilha. Tente novamente.')
+    }
   }, [exportData])
 
   return (
