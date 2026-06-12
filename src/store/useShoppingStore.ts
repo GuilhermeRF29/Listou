@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useShallow } from 'zustand/react/shallow'
 import type { ChangeEvent } from 'react'
 import type { User } from 'firebase/auth'
 import { doc, setDoc, deleteDoc } from 'firebase/firestore'
@@ -582,9 +583,11 @@ export const useShoppingStore = create<ShoppingStore>((set, get) => ({
 
 export const useTotal = () => useShoppingStore(s => s.activeItems.reduce((acc, i) => acc + (i.price * i.quantity), 0))
 export const useCheckedTotal = () => useShoppingStore(s => s.activeItems.filter(i => i.checked).reduce((acc, i) => acc + (i.price * i.quantity), 0))
-export const useUniqueStores = () => useShoppingStore(s => {
-  const stores = new Set<string>()
-  s.catalog.forEach(c => c.store && stores.add(c.store))
-  s.activeItems.forEach(i => i.store && stores.add(i.store))
-  return [...stores]
-})
+export const useUniqueStores = () => useShoppingStore(
+  useShallow(s => {
+    const stores = new Set<string>()
+    s.catalog.forEach(c => c.store && stores.add(c.store))
+    s.activeItems.forEach(i => i.store && stores.add(i.store))
+    return [...stores]
+  })
+)
